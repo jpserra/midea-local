@@ -776,7 +776,7 @@ class MessageFollowMe(MessageACBase):
         temp_value = int(self.temperature * 2) + 50
         temp_value = max(0, min(255, temp_value))
 
-        # Fahrenheit flag: bit 2 of byte 1
+        # Fahrenheit flag: bit 2 of byte 0
         fahrenheit_flag = 0x04 if self.fahrenheit else 0x00
 
         return bytearray(

@@ -882,7 +882,7 @@ class TestMessageFollowMe:
     def test_follow_me_temperature_clamping_low(self) -> None:
         """Test follow me message body clamps low temperature."""
         msg = MessageFollowMe(protocol_version=ProtocolVersion.V1)
-        msg.temperature = -50.0  # Would be -50, needs clamping to 0
+        msg.temperature = -50.0  # Would be (-50 * 2) + 50 = -50, clamped to 0
         msg.fahrenheit = False
         assert msg.body[2] == 0  # Min byte value
 
