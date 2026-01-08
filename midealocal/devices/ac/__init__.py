@@ -12,6 +12,7 @@ from .message import (
     MessageACResponse,
     MessageCapabilitiesAdditionalQuery,
     MessageCapabilitiesQuery,
+    MessageFollowMe,
     MessageGeneralSet,
     MessageGroupZeroQuery,
     MessageHumidityQuery,
@@ -499,6 +500,27 @@ class MideaACDevice(MideaDevice):
             except Exception:
                 _LOGGER.exception("[%s] Set customize error", self.device_id)
             self.update_all({"temperature_step": self._temperature_step})
+
+    def send_follow_me_temperature(
+        self,
+        temperature: float,
+        fahrenheit: bool = False,
+    ) -> None:
+        """Send follow me temperature to AC unit.
+
+        This sends an external temperature reading to the AC unit, enabling
+        the "Follow Me" feature where the AC uses this temperature for its
+        internal control logic instead of its built-in sensor.
+
+        Args:
+            temperature: The temperature value to send (in Celsius or Fahrenheit).
+            fahrenheit: If True, temperature is in Fahrenheit; otherwise Celsius.
+
+        """
+        message = MessageFollowMe(self._message_protocol_version)
+        message.temperature = temperature
+        message.fahrenheit = fahrenheit
+        self.build_send(message)
 
 
 class MideaAppliance(MideaACDevice):

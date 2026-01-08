@@ -7,6 +7,7 @@ from midealocal.devices.ac.message import (
     MessageACBase,
     MessageACResponse,
     MessageCapabilitiesQuery,
+    MessageFollowMe,
     MessageGeneralSet,
     MessageNewProtocolQuery,
     MessagePowerQuery,
@@ -831,3 +832,66 @@ class TestMessageACResponse:
         body[5] = 0x13
         response = MessageACResponse(self.header + body)
         assert not hasattr(response, "power")
+
+
+class TestMessageFollowMe:
+    """Test Message Follow Me."""
+
+    def test_follow_me_body_default(self) -> None:
+        """Test follow me message body with default values."""
+        msg = MessageFollowMe(protocol_version=ProtocolVersion.V1)
+        # Default temperature is 25.0°C, encoded as (temp * 2) + 50 = 100
+        expected_body = bytearray(
+            [
+                0x1F,  # Body type
+                0x00,  # Fahrenheit flag (0 = Celsius)
+                100,  # Encoded temperature value
+                0x00,  # Reserved
+                0x00,  # Reserved
+            ],
+        )
+        # The body includes body_type, _body, message_id, and crc
+        assert msg.body[0] == expected_body[0]  # Body type 0x1F
+        assert msg.body[1] == expected_body[1]  # Fahrenheit flag
+        assert msg.body[2] == expected_body[2]  # Encoded temperature
+
+    def test_follow_me_body_celsius(self) -> None:
+        """Test follow me message body with celsius temperature."""
+        msg = MessageFollowMe(protocol_version=ProtocolVersion.V1)
+        msg.temperature = 22.5
+        msg.fahrenheit = False
+        # 22.5°C encoded as (temp * 2) + 50 = 95
+        assert msg.body[2] == 95
+
+    def test_follow_me_body_fahrenheit(self) -> None:
+        """Test follow me message body with fahrenheit flag."""
+        msg = MessageFollowMe(protocol_version=ProtocolVersion.V1)
+        msg.temperature = 72.0
+        msg.fahrenheit = True
+        # 72°F encoded as (temp * 2) + 50 = 194, Fahrenheit flag is 0x04
+        assert msg.body[1] == 0x04  # Fahrenheit flag set
+        assert msg.body[2] == 194
+
+    def test_follow_me_temperature_clamping_high(self) -> None:
+        """Test follow me message body clamps high temperature."""
+        msg = MessageFollowMe(protocol_version=ProtocolVersion.V1)
+        msg.temperature = 150.0  # Would be 350, needs clamping to 255
+        msg.fahrenheit = False
+        assert msg.body[2] == 255  # Max byte value
+
+    def test_follow_me_temperature_clamping_low(self) -> None:
+        """Test follow me message body clamps low temperature."""
+        msg = MessageFollowMe(protocol_version=ProtocolVersion.V1)
+        msg.temperature = -50.0  # Would be -50, needs clamping to 0
+        msg.fahrenheit = False
+        assert msg.body[2] == 0  # Min byte value
+
+    def test_follow_me_message_type(self) -> None:
+        """Test follow me message type is set."""
+        msg = MessageFollowMe(protocol_version=ProtocolVersion.V1)
+        assert msg.message_type == MessageType.set
+
+    def test_follow_me_body_type(self) -> None:
+        """Test follow me body type is 0x1F."""
+        msg = MessageFollowMe(protocol_version=ProtocolVersion.V1)
+        assert msg.body_type == ListTypes.X1F
