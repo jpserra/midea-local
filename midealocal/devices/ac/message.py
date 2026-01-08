@@ -746,6 +746,49 @@ class MessageNewProtocolSet(MessageACBase):
         return payload
 
 
+class MessageFollowMe(MessageACBase):
+    """AC message follow me (send external sensor temperature to AC unit).
+
+    This message sends an external temperature reading to the AC unit,
+    enabling the "Follow Me" feature where the AC uses this temperature
+    for its internal control logic instead of its built-in sensor.
+    """
+
+    def __init__(self, protocol_version: int) -> None:
+        """Initialize AC message follow me."""
+        super().__init__(
+            protocol_version=protocol_version,
+            message_type=MessageType.set,
+            body_type=ListTypes.X1F,
+        )
+        self.temperature: float = 25.0
+        self.fahrenheit: bool = False
+
+    @property
+    def _body(self) -> bytearray:
+        """Build follow me message body.
+
+        Temperature is encoded as: (temperature * 2) + 50
+        This gives a valid range of approximately -25°C to 102.5°C
+        """
+        # Encode temperature: (temp * 2) + 50
+        # Clamp temperature to valid range (0-255 byte value means -25 to 102.5°C)
+        temp_value = int(self.temperature * 2) + 50
+        temp_value = max(0, min(255, temp_value))
+
+        # Fahrenheit flag: bit 2 of byte 0
+        fahrenheit_flag = 0x04 if self.fahrenheit else 0x00
+
+        return bytearray(
+            [
+                fahrenheit_flag,  # Byte 0: flags (bit 2 = fahrenheit)
+                temp_value,  # Byte 1: encoded temperature
+                0x00,  # Byte 2: reserved
+                0x00,  # Byte 3: reserved
+            ],
+        )
+
+
 class XA0MessageBody(MessageBody):
     """AC A0 message body."""
 

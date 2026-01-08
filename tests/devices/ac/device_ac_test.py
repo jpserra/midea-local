@@ -241,3 +241,21 @@ class TestMideaACDevice:
     def test_invalid_customize_format(self) -> None:
         """Test invalid customize format."""
         self.device.set_customize("{")
+
+    def test_send_follow_me_temperature(self) -> None:
+        """Test send follow me temperature."""
+        with patch.object(self.device, "build_send") as mock_build_send:
+            self.device.send_follow_me_temperature(22.5, fahrenheit=False)
+            mock_build_send.assert_called_once()
+            message = mock_build_send.call_args[0][0]
+            assert message.temperature == 22.5
+            assert message.fahrenheit is False
+
+    def test_send_follow_me_temperature_fahrenheit(self) -> None:
+        """Test send follow me temperature with fahrenheit."""
+        with patch.object(self.device, "build_send") as mock_build_send:
+            self.device.send_follow_me_temperature(72.0, fahrenheit=True)
+            mock_build_send.assert_called_once()
+            message = mock_build_send.call_args[0][0]
+            assert message.temperature == 72.0
+            assert message.fahrenheit is True
